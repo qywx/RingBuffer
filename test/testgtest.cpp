@@ -9,21 +9,34 @@
 using namespace std;
 using namespace Sledge;
 
+
+namespace Sledge {
+
+	// It's important that the << operator is defined in the SAME
+	// namespace that defines Bar.  C++'s look-up rules rely on that.
+	::std::ostream& operator<<(::std::ostream& os, const RingIndex& ri)
+	{
+		//return os << bar.toString();  // whatever needed to print bar to os
+		return os << "idx_max: " << ri.get_max() << ", idx:" << ri.get();
+	}
+	
+}
+	
 namespace {
 	
-	// The fixture for testing class Foo.
-	class ParameterTest : public ::testing::Test
+	/*// The fixture for testing class Foo.
+	class RingIndexTest : public ::testing::Test
 	{
 	protected:
 		// You can remove any or all of the following functions if its body
 		// is empty.
 		
-		ParameterTest()
+		RingIndexTest()
 		{
 			// You can do set-up work for each test here.
 		}
 		
-		virtual ~ParameterTest()
+		virtual ~RingIndexTest()
 		{
 			// You can do clean-up work that doesn't throw exceptions here.
 		}
@@ -45,25 +58,96 @@ namespace {
 		
 		// Objects declared here can be used by all tests in the test case for Foo.
 	};
+	 
+	Use TEST_F( RingIndexTest, test_name ){}
+	*/
 
 
 	// Tests that the Foo::Bar() method does Abc.
-	TEST_F(ParameterTest, Simple)
+	TEST( RingIndexTest,  Simple )
 	{
-		RingBuffer<uint16_t> rb(256);
-		for( int i=0; i<256 ; ++i )
-			rb.push()
+		constexpr unsigned TEST_SIZE = 256;
+		RingBuffer<uint16_t> rb(TEST_SIZE);
+		for( int i=0; i<TEST_SIZE ; ++i )
+			EXPECT_EQ( rb.push(i), true );
+		EXPECT_EQ( rb.length(), TEST_SIZE);
+		EXPECT_EQ( rb.push(0), false );  // buffer overflow. failed to push
+		for( int i=0; i<TEST_SIZE ; ++i )
+			EXPECT_EQ( rb[i], i );
+		for( int i=0; i<TEST_SIZE ; ++i ) {
+			auto v = rb.pop(); 
+			EXPECT_EQ( v, i);
+		}
+		EXPECT_TRUE( rb.isEmpty() );
 	}
 
 	// Tests that the Foo::Bar() method does Abc.
-	TEST_F(ParameterTest, Simple2)
+	TEST( RingIndexTest, RingIndex1)
 	{
+		RingIndex ri(22, 23);
+		EXPECT_EQ(++ri, 0);
+		EXPECT_EQ(ri + 23, 0);
+		EXPECT_EQ(ri + 24, 1);
+		ri += 5;
+		EXPECT_EQ(ri, 5);
+		EXPECT_EQ(ri + RingIndex::LIMIT_MAX, ri + (RingIndex::LIMIT_MAX % ri.get_max()));
+	}
+	
+	// Tests that the Foo::Bar() method does Abc.
+	TEST( RingIndexTest, RingIndex2)
+	{
+		RingIndex ri2;
+		EXPECT_EQ( ri2++, 0 );
+		EXPECT_EQ( ++ri2, 2 );
+		EXPECT_EQ( ri2-2, 0 );
+		EXPECT_EQ( ri2-=2, 0 );
+		EXPECT_EQ( --ri2, ri2.get_max()-1 );
+		EXPECT_EQ( ri2+1, 0 );
+		EXPECT_EQ( ri2-5, ri2.get_max()-6 );
+	}
+	
+	TEST( RingIndexTest, RingIndexF)
+	{
+		RingIndex ri(0,256);
+		ASSERT_EQ( ri + ri.get_max(), ri);
 		
+		auto max = RingIndex::LIMIT_MAX / 2;
+		ri.set_max(max);
+		ri.set( max / 200 );  // value much less than max 
+		ASSERT_EQ( ri + (max + 22), ri.get() + 22 );
+		ASSERT_EQ( ri + (max + 25662), ri.get() + 25662 );
+		ASSERT_EQ( ri + 453, ri.get() + 453 );
+		
+		ri.set_max( RingIndex::LIMIT_MAX - 211 );
+		ri = 0; 
+		ri += RingIndex::LIMIT_MAX;
+		ASSERT_EQ( ri, RingIndex::LIMIT_MAX % ri.get_max() );
+		
+		ri.set( ri.get_max() );
+		ASSERT_EQ( ri, 0 );
+		
+		// When result overflows ( value + increment ) > LIMIT_MAX 
+		ri.set_max( RingIndex::LIMIT_MAX - 7 );
+		ri = RingIndex::LIMIT_MAX - 9;
+		ri += 15;
+		ASSERT_EQ( ri, 13 );  // 15 - (9-7)
+		
+		ri.set_max( RingIndex::LIMIT_MAX - 777 );
+		ri = RingIndex::LIMIT_MAX - 9999;
+		ri += 55555;
+		ASSERT_EQ( ri, 55555 - (9999-777) );  // 
+		
+		/*for( size_t i=0; i < ri.get_max(); ++i ){
+			ri = i;
+			for( size_t j=0; i < RingIndex::LIMIT_MAX; ++i ) {
+				ASSERT_EQ( ri + j , (ri.get() + j) % ri.get_max() );
+			}
+		}*/
 	}
 	
 	
 	
-	int main(int argc, char **argv)
+	int main(int argc, char *argv[])
 	{
 		::testing::InitGoogleTest(&argc, argv);
 		return RUN_ALL_TESTS();

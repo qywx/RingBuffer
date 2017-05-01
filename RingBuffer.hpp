@@ -31,23 +31,33 @@ namespace Sledge {
 	{
 	public:
 		using RawType = std::size_t;  //RawType_;
+		using RawT = RawType;
 		using SRrawType = signed RawType;
+		
 		static const RawType LIMIT_MAX = std::numeric_limits<RawType>::max();
+		//static const RawType INDEX_MAX = LIMIT_MAX -1;
 	
 	protected:
 		RawType idx_max = LIMIT_MAX;  // 0 causes undef.beh.
 		RawType idx = 0;
 	
 	public:  // == CONSTRUCTOR ==
-		RingIndex(
-			  RawType idx     = 0
-			, RawType idx_max = LIMIT_MAX
-		) :
-		      idx(idx)
-			, idx_max(idx_max)
+		RingIndex( RawType idx     = 0
+				 , RawType idx_max = LIMIT_MAX )
+		    : idx_max(idx_max)
+		    , idx(idx % idx_max)
 		{
+			/*//if( idx >= idx_max )
+				this->idx %= idx_max;*/
+		}
+		
+		RingIndex( const RingIndex& ri )
+			: idx(ri.idx)
+			, idx_max(ri.idx_max)
+		{
+			/* Do not spend time for this sanity check. We believe input `ri` is normalized
 			if( idx_max >= idx )
-				this->idx %= idx_max;
+				this->idx %= idx_max;*/
 		}
 		
 		/*RingIndex(
@@ -58,10 +68,48 @@ namespace Sledge {
 				, idx(idx)
 		{}*/
 	
-	public:  // == METHODS ==
+	public:  // == GETERS and SETTERS and CAST operators and ASSIGN OPERATORS ==
+		
+		/// Cast
+		explicit operator RawType() const {
+			return idx;
+		}
+		
+		RawType get() const {
+			return idx;
+		}
+		
+		RingIndex& set(RawT i){
+			idx = i % idx_max;
+			return *this;
+		}
+		
+		RawType get_max() const {
+			return idx_max;
+		}
+		
+		RingIndex& set_max(RawT max){
+			idx_max = max;
+			idx %= idx_max;
+			return *this;
+		}
+		
+		RingIndex & operator=(RawT r){
+			/*idx = r % idx_max;
+			return *this;*/
+			return set(r);
+		}
+		
+		RingIndex & operator=(RingIndex const & ri){
+			idx = ri.idx;
+			idx_max = ri.idx_max;
+			return *this;
+		}
+		
+	public:  // == ARIFMETHIC OPERATORS ==
 		/// Pre-increment
 		RingIndex& operator++(){
-			if( ++idx < idx_max )  idx = 0;  //idx = ++idx % idx_max;
+			if( ++idx >= idx_max )  idx = 0;  //idx = ++idx % idx_max;
 			return *this;
 		}
 		
@@ -86,17 +134,18 @@ namespace Sledge {
 		
 		/// Post-decrement. Create copy to return non-Increment.
 		RingIndex operator--(int){
-			auto copy = RingIndex(idx_max,idx);
+			auto copy = *this;  //auto copy = RingIndex(idx_max,idx);
 			this->operator--();  //idx = ++idx % idx_max;
 			return copy;
 		}
 		
 		RingIndex& operator+=( RawType inc )
 		{
-			inc %= idx_max;
-			if( idx + inc < idx )  // would overflow
-				idx = (idx + inc) + (LIMIT_MAX - idx_max);
-			if( idx + inc >= idx_max )  // not overflowed over `LIMIT_MAX`, but over `idx_max`
+			//inc %= idx_max;
+			idx += inc;
+			if( idx < inc )  // overflow
+				idx += LIMIT_MAX - idx_max +1;
+			//if( idx >= idx_max )  // not overflowed over `LIMIT_MAX`, but over `idx_max`
 				idx %= idx_max;
 			/*if( inc > (LIMIT_MAX - idx) )  // would overflow
 				idx += inc + (LIMIT_MAX - idx_max);
@@ -111,22 +160,84 @@ namespace Sledge {
 			return *this;
 		}
 		
-		//Todo
-		/*RingIndex& operator-=( Index_t dec ) const 
-		{
-			Index_t ret = idx - dec;
-			if( ret >= bourn_ )
-				ret -= bourn_;
-			return *this;
-		}*/
 		
-		/// Cast
-		operator RawType(){
-			return idx;
+		RingIndex & operator-=( RawType dec ) 
+		{
+			if( idx < dec )  // would underflow
+				idx = idx_max - (dec-idx);
+			else
+				idx -= dec;
+			return *this;
 		}
 		
-		RawType get_max(){
-			return idx_max;
+		RingIndex operator+( RawType inc ) const
+		{
+			RingIndex ret = *this;
+			ret += inc;
+			/*//ret.inc %= ret.idx_max;
+			ret.idx += inc;
+			if( ret.idx < inc )  // would overflow
+				ret.idx += LIMIT_MAX - ret.idx_max + 1;
+			//if( ret.idx >= ret.idx_max )  // not overflowed over `LIMIT_MAX`, but over `idx_max`
+				ret.idx %= ret.idx_max;*/
+			return ret;
+		}
+		
+		RingIndex operator-( RawType dec ) const
+		{
+			RingIndex ret = *this;
+			ret -= dec;
+			return ret;
+		}
+		
+	public:  // == COMPARISON OPERATORS ==
+		
+		bool operator==(RingIndex const &ri) const{
+			return idx == ri.idx;
+		}
+		
+		bool operator!=(RingIndex const &ri) const{
+			return idx != ri.idx;
+		}
+		
+		bool operator<(RingIndex const &ri) const {
+			return idx < ri.idx;
+		}
+		
+		bool operator>(RingIndex const &ri) const {
+			return idx > ri.idx;
+		}
+		
+		bool operator<=(RingIndex const &ri) const {
+			return idx <= ri.idx;
+		}
+		
+		bool operator>=(RingIndex const &ri) const {
+			return idx >= ri.idx;
+		}
+		
+		bool operator==(RawT i) const {
+			return idx == i;
+		}
+		
+		bool operator!=(RawT i) const {
+			return idx != i;
+		}
+		
+		bool operator<(RawT i) const {
+			return idx < i;
+		}
+		
+		bool operator>(RawT i) const {
+			return idx > i;
+		}
+		
+		bool operator<=(RawT i) const {
+			return idx <= i;
+		}
+		
+		bool operator>=(RawT i) const {
+			return idx >= i;
 		}
 	};
 	
@@ -161,44 +272,53 @@ namespace Sledge {
 		
 		/// Определяем псевдоним для индексов. int позволит использовать отрицательные индексы
 		//typedef int Index_t;  //size_t
-		using IndexT = volatile signed SizeT;  //SizeT
-
+		using IndexT = volatile signed int;  //SizeT
+		using Index_t = IndexT;
+	
+	public:  // == STATIC CONSTANTS ==
+		static constexpr SizeT DEFAULT_CAPACITY = 16;
+		
 	public:  // == CONSTRUCTORS and DESTRUCTOR
+		
 		RingBuffer(Index_t size, Index_t brn/*=0*/) 
 			: SIZE(size), bourn_(brn)//(brn!=0?brn:size)
 		{
 			_data = allocator_.allocate(size); 
 		}
-		RingBuffer(Index_t size) 
-			: SIZE(size)//, bourn_(size)
+		
+		RingBuffer(Index_t capacity = DEFAULT_CAPACITY) 
+			: capacity_(capacity)//, bourn_(size)
 		{
-			_data = allocator_.allocate(size); 
+			_data = allocator_.allocate(capacity_); 
 		}
 		
 		// Для наследования. Разрешает полиморфизм Base *b = new Derived(); delete b;
 		virtual ~RingBuffer(){
-			allocator_.deallocate(_data, SIZE);
+			allocator_.deallocate(_data, capacity_);
 		}
 
 	private:
 		//const Index_t SIZE       = 0;
-		SizeT            capacity;
+		SizeT            capacity_ = DEFAULT_CAPACITY;
+		Allocator        allocator_;
 		Data_t          *_data = nullptr;
+		
 		IndexT head_     = 0; 	/// количество чтений, индекс головы
 		IndexT tail_     = 0; 	/// количество записей, индекс хвоста, индекс куда будет записан следующий элемент
 		IndexT length_   = 0;	/// количество элементов
-		IndexT bourn_    = SIZE; 	/// предельное наполнение //volatile Index_t actualSize /*= SIZE*/; /// SIZE определяет размер буффера в памяти, actualSize позволяет уменьшить текущий размер буффера
-		Allocator allocator_;
+		IndexT bourn_    = capacity_; 	/// предельное наполнение
 		///\todo bool auto_reallocate = false;  /// Самостоятельно выделять новый кусок памяти, копируя в него весь буффер при переполнеии.	
 		
-	private:
+	private:  // == УПРАВЛЕНИЕ ИНДЕКСАМИ == 
 		/// Cледующий индекс, изменяет значение входного аргумента.
+		/// ++idx
 		Index_t nextIndex( IndexT & idx) // volatile & было.
 		{
 			return idx = ++idx < bourn_ ? idx : 0;
 		}
 		
 		/// Увеличение индекса на inc, изменяет значение входного параметра.
+		/// idx += inc
 		volatile Index_t& incIndex( volatile Index_t &idx, Index_t inc ) const  // volatile & было.
 		{
 			idx += inc;
@@ -208,12 +328,14 @@ namespace Sledge {
 		}
 		
 		/// Cледующий индекс, НЕ изменяет значение входного параметра.
+		/// idx + 1
 		/*volatile*/ Index_t nextIndexOf( volatile Index_t idx) const 
 		{
 			return ++idx < bourn_ ? idx : 0;
 		}
 		
 		/// Инкремент idx на inc, НЕ изменяет значение входного параметра.
+		/// idx + inc
 		Index_t incIndexOf( Index_t idx, Index_t inc ) const 
 		{
 			Index_t ret = idx + inc;
@@ -227,9 +349,9 @@ namespace Sledge {
 		/*TODO /// Like std:Lvector::resize()
 		void resize(std::size_t siz)
 		{
-			if( size < siz ){
+			if( capacity < siz ){
 				auto newdata = allocator_.allocate(siz);
-				std::memcpy( newdata, _data, size*sizeof(
+				std::memcpy( newdata, _data, size*sizeof(T) )
 			}
 		};
 	
@@ -240,16 +362,17 @@ namespace Sledge {
 		SizeT capacity();
 		*/
 		
-	public:
+	public:  // == METHODS ==
 		/** Запись в буфер одного элемента
 		  * \return true если значение записано, false при переполнении
 		  */
-		bool push(const Data_t & value) {
+		bool push(const Data_t & value) noexcept 
+		{
 			if( isFull() )	
 				return false;
 			_data[ tail_ ] = value;
-			nextIndex(tail_);
-			length_++;
+			nextIndex(tail_);  // ++tail_;
+			++length_;
 			return true;
 		}
 		
@@ -280,17 +403,19 @@ namespace Sledge {
 		  */
 		/*bool pushForce(Data_t value) {
 			if( isFull() ){
-				value = _data[head_]; nextIndex(head_) }
+				value = _data[head_]; 
+				nextIndex(head_); 
+			}
 			_data[ nextIndex(tail_) ] = value;
 		}*/
 		
-		bool pushForce( Data_t && value) {
+		/*bool pushForce( Data_t && value) {
 			bool isful = isFull();
 			if( isful )	
 				pop();
-			push(value);
+			push( std::move(value) );
 			return isful;
-		}
+		}*/
 			
 		/** Запись в буфер массива элементов, выталкивая все предыдущие если буффер заполнен.
 		  * \return number of elements pushed
@@ -539,9 +664,9 @@ namespace Sledge {
 			return length_; //return (tail_ >= head_) ? (tail_ - head_) : (SIZE+1 - head_ + tail_);
 		}
 		
-		/// Размер буфера
-		size_t size() const {
-			return SIZE;
+		/// @return the number of elements that can be held in currently allocated storage
+		size_t capacity() const {
+			return capacity_;
 		}
 		
 		/// Получить предельный размер для записи. Удобно при динамическом изменении длины кольцевого буфера.
@@ -563,7 +688,49 @@ namespace Sledge {
 				trim( length() - bourn_ );
 			return bourn_;
 		}
+	
+	public:  // == `std::vector` COMPATIBLE METHODS. Element access  ==
 		
+		/*todo /// access specified element with bounds checking
+		at*/
+		
+		/* implemented///  access specified element
+		operator[]*/
+		
+		/// access the first element
+		T& front(){ return this->operator[](0); }
+		const T& front() const { return this->operator[](0); }
+		
+		/// access the last element
+		T& back(){ return this->operator[](-1); }
+		const T& back() const { return this->operator[](-1); }
+		
+		/// direct access to the underlying array
+		T* data(){ return _data; }
+		const T* data() const { return _data; }
+	
+	public:  // == `std::vector` COMPATIBLE METHODS. Capacity == 
+		
+		/// Checks whether the container is empty
+		bool  empty() const { return isEmpty(); };
+		
+		/// @return the number of elements
+		SizeT size()  const { return length(); };
+		
+		//ToDo///@return the maximum possible number of elements
+		//ToDo SizeT max_size() const {return bourn_max;};
+		
+		//ToDo /// Reserves storage
+		//ToDo reserve()
+		
+		//ToDo /// @return the number of elements that can be held in currently allocated storage
+		//ToDo capacity()
+		
+		//ToDo /// reduces memory usage by freeing unused memory
+		//ToDo shrink_to_fit()
+		
+		
+	public:
 		
 		// DSP functions
 		/**
