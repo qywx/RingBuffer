@@ -4,7 +4,11 @@
  *			Реализация кольцевого буффера с расширенными возможностями.
  Похржего по функционалу на std::vector
  */
+
+/// TODO  How to move to std::vector?
+/// TODO  Iterators
  
+
 #pragma once
 
 
@@ -59,14 +63,6 @@ namespace Sledge {
 			if( idx_max >= idx )
 				this->idx %= idx_max;*/
 		}
-		
-		/*RingIndex(
-				, SRawType idx     = 0
-				RrawType idx_max = LIMIT_MAX
-		) :
-				idx_max(idx_max)
-				, idx(idx)
-		{}*/
 	
 	public:  // == GETERS and SETTERS and CAST operators and ASSIGN OPERATORS ==
 		
@@ -95,8 +91,6 @@ namespace Sledge {
 		}
 		
 		RingIndex & operator=(RawT r){
-			/*idx = r % idx_max;
-			return *this;*/
 			return set(r);
 		}
 		
@@ -243,36 +237,39 @@ namespace Sledge {
 	
 	
 	/**	
-	 * Шаблон кольцевого буфера. Размер структуры 32 байта.
-	 * принимает два параметра:
-	 * @param SIZE: 	размер буфера,
-	 * @param Data_t:	тип элементов хранящихся в буфере, по умолчанию unsigned char
+	 * Шаблон кольцевого буфера.
+	 * @param T:	      тип элементов хранящихся в буфере, по умолчанию unsigned char
+	 * @param Allocator
+	 * @param IndexT_:	  используйте volatile, чтобы обеспечить лайтовую потоко-безопасноть
 	 */
-	template<typename T, typename Allocator = std::allocator<T> >
+	template< typename T, typename Allocator = std::allocator<T>, typename IndexT_ = signed int >
 	class RingBuffer //: private Allocator
 	{
 	public:  // == TYPES as `std::vector` ==
 		//typedef Data_t                                   T;
 		//typedef T                                        value_type;
-		typedef T                                        value_type, Data_t;
-		typedef Allocator                                allocator_type;
-		typedef typename allocator_type::reference       reference;
-		typedef typename allocator_type::const_reference const_reference;
-		/*typedef implementation-defined                   iterator;
-		typedef implementation-defined                   const_iterator;*/
-		typedef typename allocator_type::size_type       size_type;
-		typedef typename allocator_type::difference_type difference_type;
-		typedef typename allocator_type::pointer         pointer;
-		typedef typename allocator_type::const_pointer   const_pointer;
+		typedef T                                          value_type;
+		typedef Allocator                                  allocator_type;
+		typedef typename allocator_type::reference         reference;
+		typedef typename allocator_type::const_reference   const_reference;
+		/*typedef implementation-defined                     iterator;
+		typedef implementation-defined                     const_iterator;*/
+		typedef typename allocator_type::size_type         size_type;
+		typedef typename allocator_type::difference_type   difference_type;
+		typedef typename allocator_type::pointer           pointer;
+		typedef typename allocator_type::const_pointer     const_pointer;
 		//typedef std::reverse_iterator<iterator>          reverse_iterator;
 		//typedef std::reverse_iterator<const_iterator>    const_reverse_iterator;
 	
 	public:  // == TYPES ==
+		using ThisT = RingBuffer< T, Allocator, IndexT_ >;
+		
 		using SizeT = size_type;
+		using Data_t = T;
+		using DataT = T;
 		
 		/// Определяем псевдоним для индексов. int позволит использовать отрицательные индексы
-		//typedef int Index_t;  //size_t
-		using IndexT = volatile signed int;  //SizeT
+		using IndexT = IndexT_;  //volatile signed int;  //SizeT
 		using Index_t = IndexT;
 	
 	public:  // == STATIC CONSTANTS ==
@@ -443,32 +440,6 @@ namespace Sledge {
 			return i;
 		}
 		
-		/** Запись в буфер прореженного массива элементов, выталкивая все предыдущие если буффер заполнен.
-		  * Прореживание (subsampling) ...
-		  * \param 	array 	массив элементов
-		  * \param 	length 	длина массива
-		  * \param 	sub 	брать из массива каждый sub-ый элемент, например, каждый 2ой
-		  * \return	number 	of elements pushed
-		  */
-		Index_t pushForceSubsampling( const Data_t array[], Index_t length, unsigned sub )
-		{
-			assert_amsg( array != 0);
-			Index_t i=0, pushed=0;
-			while( i<length ){
-				pushForce( array[i] );
-				i+=sub;
-				pushed++;
-			}
-			return pushed;
-		}
-		
-		/**
-		 * 
-		 */
-		/*void setAllBuf( Data_t ){
-			
-		}*/
-		
 		/** Достать элемент, удаляя из буфера, и записать в value
 		  * \return Возвращает true если значение прочитано (буфер не пуст), value изменяется.
 		  */
@@ -522,22 +493,30 @@ namespace Sledge {
 		 *  \return возвращает количество вытолкнутых элементов; 0, если выталкивать нечего (пустой).
 		 */
 		Index_t pop(size_t len) {
-			Index_t i=0;
+			/*Index_t i=0;
 			Data_t dummy;
 			while( len>0 && pop(dummy) ){ 
 				len--; i++;
 			};
-			return i;
+			return i;*/
+			if( len >= length() ){
+				this->erase();  //clear
+				return length();
+			}else {
+				head_ += len;
+				length_ -= len;
+			}
 		}
 		
 		/** Вытолкнуть элементы из буфера, и записать в RingBuffer rb
 		  * \param rb куда записывать
 		  * \return Возвращает количество вытолкнутых/вставленных комнонентов.
 		  */
-		Index_t pop( RingBuffer<Data_t> &rb ){
-			int i=0;
-			while( !isEmpty() && rb.push(pop()) ){ i++; };
-			return i;
+		SizeT pop( RingBuffer<Data_t> &rb ){
+			SizeT s=0;
+			while( !isEmpty() && rb.push(pop()) ) 
+				s++;
+			return s;
 		}
 		
 		/// возвращает первый элемент из буфера, не удаляя его
@@ -561,7 +540,12 @@ namespace Sledge {
 		}
 		
 		/// эквивалент getLast()
-		Data_t& peek() /*const*/ {
+		Data_t& peek() {
+			return getLast();
+		}
+		
+		/// эквивалент getLast()
+		const Data_t& peek() const {
 			return getLast();
 		}
 		
@@ -605,40 +589,21 @@ namespace Sledge {
 		 *  Отрицательный индекс означает отсчёт с хвоста, [-1] это последний, [-2] предпоследний */ 
 		Data_t& operator[](Index_t i)
 		{
-			//if(!(-length() <= i && i < length()))
-			//	printf("if(-length() <= i && i < length()) i=%d, len=%d\n", i, length_);
-			assert( length_!=0/*!isEmpty()*/ ); 
-			assert( (-length()) <= i && i < length() );
-			/*if( isEmpty() || length() <= i || i < -length() ){
-				return *(Data_t*)NULL; 
-				throw std::out_of_range("Index out of bounds"); //throw IndexOutOfBoundsException;
-			}*/
 			if( i<0 )
 				i += length();
 			return _data[ incIndexOf(head_, i) ];
 		}
 		
 		/** Возвращает элемент (ссылку) по индексу
-		 *  Отрицательный индекс означает отсчёт с хвоста, [-1] это последний, [-2] предпоследний */ 
+		 *  Отрицательный индекс означает отсчёт с хвоста, [-1] это последний, [-2] предпоследний
+		 *  НЕТ проверки индекса
+		 */ 
 		const Data_t& operator[](Index_t i) const
 		{
-			assert_amsg( !isEmpty() ); 
-			assert_amsg( (-length()) <= i && i < length() );  //throw IndexOfBoundException()
 			if( i<0 )
 				i += length();
 			return _data[ incIndexOf(head_, i) ];
 		}
-		
-		/**	Возвращает const элемент (значение элемента) по индексу. const this
-		  *	Отрицательный индекс означает отсчёт с хвоста, [-1] это последний, [-2] предпоследний */
-		/*const Data_t& operator[] (Index_t i) const 
-		{
-			if( isEmpty() || i >= length() || i < -length() )
-				return Data_t();
-			else if( i<0 )
-				i += length();
-			return _data[ incIndexOf(head_, i) ];
-		}*/
 		
 		/// Пуст ли буфер
 		bool isEmpty() const 
@@ -650,13 +615,6 @@ namespace Sledge {
 		bool isFull() const 
 		{
 			return length_ == bourn_; //return length_ == SIZE; //return nextIndexOf(tail_) == head_;
-		}
-		
-		/// Очистить буфер
-		RingBuffer<Data_t,Allocator>& clear() 
-		{
-			head_ = tail_ = length_ = 0;
-			return *this;
 		}
 		
 		/// Количество элементов в буфере
@@ -685,14 +643,29 @@ namespace Sledge {
 			else bourn_ = size();
 			// выбросить лишние
 			if( length() > bourn_ ) 
-				trim( length() - bourn_ );
+				trim( length() - bourn_ );  //pop( length() - bourn_ );
 			return bourn_;
 		}
 	
 	public:  // == `std::vector` COMPATIBLE METHODS. Element access  ==
 		
-		/*todo /// access specified element with bounds checking
-		at*/
+		/// Access specified element with bounds checking
+		DataT& at( IndexT pos )
+		{
+			//assert( !isEmpty() );
+			//assert( (-length()) <= i && i < length() );
+			if( isEmpty() || !(-length() <= pos && pos < length() ) )
+				throw std::out_of_range();
+			return operator[](pos);
+		}
+		
+		/// Access specified element with bounds checking
+		const DataT& at( IndexT pos ) const
+		{
+			if( pos < size() )
+				throw std::out_of_range();
+			return operator[](pos);
+		}
 		
 		/* implemented///  access specified element
 		operator[]*/
@@ -709,7 +682,21 @@ namespace Sledge {
 		T* data(){ return _data; }
 		const T* data() const { return _data; }
 	
-	public:  // == `std::vector` COMPATIBLE METHODS. Capacity == 
+	public:  // TODO == `std::vector` COMPATIBLE METHODS. ITERATORS == 
+		
+		/*///@returns an iterator to the beginning
+		begin cbegin
+		
+		///@returns an iterator to the end
+		end cend
+		
+		///@returns a reverse iterator to the beginning 
+		rbegin crbegin
+				
+		///@returns a reverse iterator to the end
+		rend crend*/
+	
+	public:  // == `std::vector` COMPATIBLE METHODS. CAPACITY == 
 		
 		/// Checks whether the container is empty
 		bool  empty() const { return isEmpty(); };
@@ -728,203 +715,61 @@ namespace Sledge {
 		
 		//ToDo /// reduces memory usage by freeing unused memory
 		//ToDo shrink_to_fit()
-		
-		
-	public:
-		
-		// DSP functions
-		/**
-		 * 
-		 */
-		Data_t average() //const
-		{
-			Data_t avg = 0;
-			for( Index_t i=0; i<length(); i++ )
-				avg += operator[](i);
-			avg /= length();
-			return avg;
-		}
-		
-		
-		/**
-		 *
-		 */
-		/*Data_t mean() //const
-		{
-			return average();
-		}*/
-		
-		/// Iterative mean. http://www.heikohoffmann.de/htmlthesis/node134.html
-		/// cons: Less efficient 
-		/// plus: disallow overflow
-		Data_t mean()
-		{
-			Data_t avg = 0;
-			for( Index_t i=0; i<length(); i++) {
-				avg += ((*this)[i] - avg) / (i + 1);
-			}
-			return avg;
-		}
-
-		
-		/**
-		 * 
-		 */
-		Data_t filterOneValueKalman( Index_t numK, const Data_t koefs[] ) //const
-		{
-			//assert_amsg( numK < length() );
-			//Data_t koefs[numK] = { 0.4, 0.3, 0.2, 0.1 };  //сумма должна быть равна 1.0
-			Data_t filtered = 0;
-			for( Index_t i=length()-1, j=0; 
-					i>=0 && j<numK;
-					i--, j++ ){
-				filtered += operator[](i) * koefs[j];  //koefs[i-length()+1]
-			}
-			return filtered;
-		}
-		
-		/**
-		 *
-		 */
-		Data_t rms() //const
-		{
-			float r = 0;
-			for( int i=0; i<this->length(); i++ ){
-				r += (*this)[i] * (*this)[i];
-			}
-			r = __sqrtf( r / length() );  //should expand as the native VFP square root instructions. not specified in any standard
-			//r = sqrt( r / length() );
-			return r;
-		}
-		
-		/**
-		 *
-		 */
-		Data_t peakToPeak() //const
-		{
-			float val = (*this)[0];
-			float max = val, min = val;  //float max = -INFINITY, min = +INFINITY;
-			for( int i=1; i<length(); i++ ){
-				val = (*this)[i];
-				if( max < val )
-					max = val;
-				if( min > val )
-					min = val;
-			}
-			return max-min;
-		}
-		
-		/// окресность
-		bool okrestnost( const Data_t &val, const Data_t &main, const Data_t &okr ){
-			return (main-okr < val && val < main+okr);
-		}
-		
-		/// отсев выбросов больше
-		///\todo возникнет ошибка с j, когда length <=1
-		///\note рассчитано на небольшое количество выбросов.
-		void filter_otsev( Data_t main, Data_t okr )
-		{
-			for( int i=0; i<length(); i++ ){
-				Data_t &val = (*this)[i];
-				if( !okrestnost(val,main,okr) ){
-					Index_t j = i>=1 ? i-1 : i+1;
-					while( j<length() && !okrestnost((*this)[j],main,okr) ){
-						j++;
-					}
-					val = (*this)[j];
-				}
-			}
-		}
-		
-		struct Analyzed {
-			struct Entry { std::size_t index; Data_t value; };
-			Entry min;
-			Entry max;
-			Data_t peakToPeak;
-			Data_t avg;
-			Data_t rms;
-			Data_t middle;
-		};
-		
-		
-		/// Полный анализ, чтоб не прогонять массив по нескольку раз. Эффективнее, если нужно получить несколько параметров.
-		Analyzed& analyze(Analyzed &an) const
-		{
-			if( isEmpty() ){
-				//an = {0}; 
-				return an; 
-			}
-			an.min.index = an.max.index = 0;
-			Data_t val = (*this)[0];
-			an.max.value = val; an.min.value = val;
-			an.avg = val; 
-			an.rms = val*val;
-			for( int i=1; i<length(); i++ ){
-				val = (*this)[i];
-				if( an.max.value < val || std::isnan(an.max.value) ){
-					an.max.value = val;
-					an.max.index = i;
-				}
-				if( an.min.value > val || std::isnan(an.min.value) ){
-					an.min.value = val;
-					an.min.index = i;
-				}
-				an.avg += val;
-				an.rms += val * val;
-			}
-			an.peakToPeak = an.max.value - an.min.value;
-			an.avg /= length();
-			an.rms = std::sqrt( an.rms / length() );
-			an.middle = an.min.value + an.peakToPeak /2;
-			return an;
-		}
-		
-		
-		/// 
-		Analyzed analyze() const
-		{
-			Analyzed an; 
-			analyze(an);
-			return an;  // We may asiign stack based ref only to const ref!
-		}
-		
-	};
-
-
-
-	template<typename Data_t, typename Allocator = std::allocator<Data_t> >
-	class RingBufferDSP : /*virtual*/ public RingBuffer<Data_t,Allocator> 
-	{
-	private:
-		using Super = RingBuffer<Data_t, Allocator>;
 	
-	public:
-		/// тупой отсев(screening)
-		void filter_otsev__( Data_t main, Data_t okr )
-		{
-			for( int i=0; i<this->length(); i++ ){
-				Data_t &val = (*this)[i];
-				if( val < -okr )
-					val=-okr;
-				else if( val > okr )
-					val=okr;
-			}
-		}
+	public:  // == `std::vector` COMPATIBLE METHODS. MODIFIERS == 
 		
-		/**
-		 * Xk = K*Zk + (1-K)*(X(k-1)+Uk)
-		* \param k коэффициент Калмана. Уровень доверия показаниям датчика.
-		 * \param uk ожидаемое изменение (дельта)
-		 */
-		Data_t simpleKalman( Data_t const &k, Data_t const uk = 0 ) //const
+		/// Clears the contents
+		/// Очистить буфер
+		ThisT& clear()
 		{
-			/*if( length() >= 2 && isnormal(operator[](-1)) && isnormal(operator[](-2)) )
-				operator[](-1) = k * operator[](-1) + (1.f-k) * (operator[](-2) + uk);
-			return operator[](-1);*/
-			if( this->length() >= 2 && std::isnormal(this->operator[](-1)) && isnormal(this->operator[](-2)) )
-				this->operator[](-1) = k * this->operator[](-1) + (1.f-k) * (this->operator[](-2) + uk);
-			return this->operator[](-1);
+			head_ = tail_ = length_ = 0;
+			return *this;
 		}
+		// std::vector  return void 
+		
+		/*// inserts elements
+		insert 
+				
+		/// constructs element in-place
+		emplace
+				
+		/// erases elements
+		erase*/
+		
+		/// adds an element to the end
+		void push_back( const T& value ){ push(value); };
+		//TODO void push_back( T&& value );
+				
+		/*/// constructs an element in-place at the end
+		emplace_back
+		
+		/// removes the last element
+		pop_back
+				
+		/// changes the number of elements stored
+		resize
+		
+		/// swaps the contents
+		void swap( vector& other )*/
+	
+	public:  // TODO == COMPARISON OPERATORS == 
+		bool operator==( ThisT const& other ) const {
+			if( this == &other )
+				return true;
+			else if( this->length() == other.length() ){
+				//todo check all contents
+				return false;
+			}else{
+				return false;
+			}
+				
+		}
+		/*bool operator!=( ThisT const& other ) const {}
+		bool operator< ( ThisT const& other ) const {}
+		bool operator<=( ThisT const& other ) const {}
+		bool operator> ( ThisT const& other ) const {}
+		bool operator>=( ThisT const& other ) const {}*/
 	};
+	
 
 }  // namespace Sledge
