@@ -93,7 +93,7 @@ namespace {
 		EXPECT_EQ(ri + RingIndex::LIMIT_MAX, ri + (RingIndex::LIMIT_MAX % ri.get_max()));
 	}
 	
-	// Tests that the Foo::Bar() method does Abc.
+	/// Tests increment and decrement operations
 	TEST( RingIndexTest, RingIndex2)
 	{
 		RingIndex ri2;
@@ -116,7 +116,7 @@ namespace {
 		ri.set( max / 200 );  // value much less than max 
 		ASSERT_EQ( ri + (max + 22), ri.get() + 22 );
 		ASSERT_EQ( ri + (max + 25662), ri.get() + 25662 );
-		ASSERT_EQ( ri + 453, ri.get() + 453 );
+		ASSERT_EQ( ri + 453, ri.get() + 453 );  // no overflow
 		
 		ri.set_max( RingIndex::LIMIT_MAX - 211 );
 		ri = 0; 
@@ -125,8 +125,13 @@ namespace {
 		
 		ri.set( ri.get_max() );
 		ASSERT_EQ( ri, 0 );
-		
-		// When result overflows ( value + increment ) > LIMIT_MAX 
+	}
+	
+	
+	/// When result overflows ( value + increment ) > LIMIT_MAX 
+	TEST( RingIndexTest, RingIndex_OverflowSum)
+	{
+		RingIndex ri;
 		ri.set_max( RingIndex::LIMIT_MAX - 7 );
 		ri = RingIndex::LIMIT_MAX - 9;
 		ri += 15;
@@ -136,13 +141,12 @@ namespace {
 		ri = RingIndex::LIMIT_MAX - 9999;
 		ri += 55555;
 		ASSERT_EQ( ri, 55555 - (9999-777) );  // 
+	}
+	
+	//todo
+	TEST( RingIndexTest, RingIndex_UnderflowSub)
+	{
 		
-		/*for( size_t i=0; i < ri.get_max(); ++i ){
-			ri = i;
-			for( size_t j=0; i < RingIndex::LIMIT_MAX; ++i ) {
-				ASSERT_EQ( ri + j , (ri.get() + j) % ri.get_max() );
-			}
-		}*/
 	}
 	
 	

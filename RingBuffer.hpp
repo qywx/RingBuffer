@@ -2,9 +2,10 @@
  * \author 	Ivan "Kyb Sledgehammer" Kuvaldin <i.kyb[2]ya,ru>
  * \brief   
  *			Реализация кольцевого буффера с расширенными возможностями.
- Похржего по функционалу на std::vector
+ *          Похржего по функционалу на std::vector
  */
 
+/// TODO  Перевести RingBuffer::Index_t на RingIndex
 /// TODO  How to move to std::vector?
 /// TODO  Iterators
  
@@ -30,6 +31,7 @@ namespace Sledge {
 	using std::size_t;
 	
 	/// Max value of index is LIMIT_MAX 
+	///@note read more about optimizations <http://stackoverflow.com/questions/43731203/is-the-if-statement-redundant-before-modulo-and-before-assign-operations>
 	//template<typename RawType_=std::size_t>
 	class RingIndex
 	{
@@ -100,16 +102,17 @@ namespace Sledge {
 			return *this;
 		}
 		
-	public:  // == ARIFMETHIC OPERATORS ==
+	public:  // == ARITHMETIC OPERATORS ==
 		/// Pre-increment
 		RingIndex& operator++(){
-			if( ++idx >= idx_max )  idx = 0;  //idx = ++idx % idx_max;
+			if( ++idx >= idx_max )  
+				idx = 0;  //idx = ++idx % idx_max;
 			return *this;
 		}
 		
 		/// Post-increment. Create copy to return non-incremented.
 		RingIndex operator++(int){
-			auto copy = *this;  //auto copy = RingIndex(idx_max,idx);  // 
+			auto copy = *this;   //auto copy = RingIndex(idx_max,idx);  // 
 			this->operator++();  //ToDo check vs simple void function without `return statement`
 			return copy;
 		}
@@ -168,12 +171,6 @@ namespace Sledge {
 		{
 			RingIndex ret = *this;
 			ret += inc;
-			/*//ret.inc %= ret.idx_max;
-			ret.idx += inc;
-			if( ret.idx < inc )  // would overflow
-				ret.idx += LIMIT_MAX - ret.idx_max + 1;
-			//if( ret.idx >= ret.idx_max )  // not overflowed over `LIMIT_MAX`, but over `idx_max`
-				ret.idx %= ret.idx_max;*/
 			return ret;
 		}
 		
@@ -238,9 +235,9 @@ namespace Sledge {
 	
 	/**	
 	 * Шаблон кольцевого буфера.
-	 * @param T:	      тип элементов хранящихся в буфере, по умолчанию unsigned char
-	 * @param Allocator
-	 * @param IndexT_:	  используйте volatile, чтобы обеспечить лайтовую потоко-безопасноть
+	 * @param T         : тип элементов хранящихся в буфере, по умолчанию unsigned char
+	 * @param Allocator : 
+	 * @param IndexT_   : используйте volatile, чтобы обеспечить лайтовую потоко-безопасноть
 	 */
 	template< typename T, typename Allocator = std::allocator<T>, typename IndexT_ = signed int >
 	class RingBuffer //: private Allocator
@@ -303,7 +300,7 @@ namespace Sledge {
 		IndexT head_     = 0; 	/// количество чтений, индекс головы
 		IndexT tail_     = 0; 	/// количество записей, индекс хвоста, индекс куда будет записан следующий элемент
 		IndexT length_   = 0;	/// количество элементов
-		IndexT bourn_    = capacity_; 	/// предельное наполнение
+		IndexT bourn_    = capacity_; 	/// предельное наполнение, позволяет задать предел наполнения буфера
 		///\todo bool auto_reallocate = false;  /// Самостоятельно выделять новый кусок памяти, копируя в него весь буффер при переполнеии.	
 		
 	private:  // == УПРАВЛЕНИЕ ИНДЕКСАМИ == 
@@ -316,7 +313,7 @@ namespace Sledge {
 		
 		/// Увеличение индекса на inc, изменяет значение входного параметра.
 		/// idx += inc
-		volatile Index_t& incIndex( volatile Index_t &idx, Index_t inc ) const  // volatile & было.
+		Index_t& incIndex( Index_t &idx, Index_t inc ) const  // volatile & было.
 		{
 			idx += inc;
 			if( idx >= bourn_ )
@@ -326,7 +323,7 @@ namespace Sledge {
 		
 		/// Cледующий индекс, НЕ изменяет значение входного параметра.
 		/// idx + 1
-		/*volatile*/ Index_t nextIndexOf( volatile Index_t idx) const 
+		Index_t nextIndexOf( Index_t idx) const 
 		{
 			return ++idx < bourn_ ? idx : 0;
 		}
@@ -376,7 +373,7 @@ namespace Sledge {
 		/** Запись в буфер массива элементов. Будет записано не более чем свободно.
 		  * \return Количество вставленных элементов
 		  */
-		Index_t push( Data_t array[], Index_t length )
+		Index_t push( const Data_t array[], Index_t length )
 		{
 			Index_t i=0;
 			while( i<length && push(array[i]) )
@@ -500,8 +497,9 @@ namespace Sledge {
 			};
 			return i;*/
 			if( len >= length() ){
-				this->erase();  //clear
-				return length();
+				len = length();
+				clear();
+				return len;
 			}else {
 				head_ += len;
 				length_ -= len;
