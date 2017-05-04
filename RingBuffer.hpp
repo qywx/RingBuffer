@@ -15,11 +15,6 @@
 
 //#pragma diag_suppress 284  // Suppress null-reference is not allowed
 
-
-//#include "Buffer.hpp"
-//#include "Sledge/utils.h"
-//#include "Sledge/assert.h"
-
 #include <memory>
 #include <cmath>
 #include <cstddef>
@@ -291,7 +286,7 @@ namespace Sledge {
 			allocator_.deallocate(_data, capacity_);
 		}
 
-	private:
+	private:  // == VARIABLES ==
 		//const Index_t SIZE       = 0;
 		SizeT            capacity_ = DEFAULT_CAPACITY;
 		Allocator        allocator_;
@@ -301,9 +296,9 @@ namespace Sledge {
 		IndexT tail_     = 0; 	/// количество записей, индекс хвоста, индекс куда будет записан следующий элемент
 		IndexT length_   = 0;	/// количество элементов
 		IndexT bourn_    = capacity_; 	/// предельное наполнение, позволяет задать предел наполнения буфера
-		///\todo bool auto_reallocate = false;  /// Самостоятельно выделять новый кусок памяти, копируя в него весь буффер при переполнеии.	
+		//TODO bool autoReallocate_ = false;  /// Самостоятельно выделять новый кусок памяти при переполнении буфера (недостаточно емкости), копируя в него весь буффер при переполнеии.	
 		
-	private:  // == УПРАВЛЕНИЕ ИНДЕКСАМИ == 
+	private:  // == УПРАВЛЕНИЕ ИНДЕКСАМИ ==  //todo remove and use RingIndex
 		/// Cледующий индекс, изменяет значение входного аргумента.
 		/// ++idx
 		Index_t nextIndex( IndexT & idx) // volatile & было.
@@ -340,7 +335,7 @@ namespace Sledge {
 		
 	public:  // == Data storage METHODS ==
 		
-		/*TODO /// Like std:Lvector::resize()
+		/*TODO /// Like std::vector::resize() <http://en.cppreference.com/w/cpp/container/vector/resize>
 		void resize(std::size_t siz)
 		{
 			if( capacity < siz ){
