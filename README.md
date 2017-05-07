@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sledgeh/RingBuffer.png?branch=master)](https://travis-ci.org/sledgeh/RingBuffer)
+
 RingBuffer
 ==========
 This is a header-only implementation of ring (or circular) buffer in C++11. It depends only on few stdlib definitions.
