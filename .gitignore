@@ -1,33 +1,36 @@
 /.idea/
 /build/
 /cmake-build-debug/
+CMakeFiles/
+CMakeCache.txt
 
-# Compiled Object files
+
+## Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
 
-# Precompiled Headers
+## Precompiled Headers
 *.gch
 *.pch
 
-# Compiled Dynamic libraries
+## Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
 
-# Fortran module files
+## Fortran module files
 *.mod
 *.smod
 
-# Compiled Static libraries
+## Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
 
-# Executables
+## Executables
 *.exe
 *.out
 *.app
