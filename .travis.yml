@@ -10,5 +10,17 @@ git:
   submodules: false
 ## Use sed to replace the SSH URL with the public URL, then initialize submodules
 before_install:
-  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules  && cat .gitmodules
   - git submodule update --init --recursive
+  
+## From http://stackoverflow.com/questions/22111549/travis-ci-with-clang-3-4-and-c11#30925448
+install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
+      - clang
