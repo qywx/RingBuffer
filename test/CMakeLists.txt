@@ -7,7 +7,7 @@ enable_testing()
 include_directories( ${googletest_SOURCE_DIR}/include
                      ${googletest_SOURCE_DIR} 
                      )
-message(STATUS "googletest_SOURCE_DIR=${googletest_SOURCE_DIR}")
+message(STATUS "googletest_SOURCE_DIR=${googletest_SOURCE_DIR}")  # fails with travis 
 
 ################################
 # Unit Tests
