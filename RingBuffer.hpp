@@ -2,7 +2,7 @@
  * \author 	Ivan "Kyb Sledgehammer" Kuvaldin <i.kyb[2]ya,ru>
  * \brief   
  *			Реализация кольцевого буффера с расширенными возможностями.
- *          Похржего по функционалу на std::vector
+ *          Похожего по функционалу на std::vector
  */
 
 /// TODO  Перевести RingBuffer::Index_t на RingIndex
@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <stdexcept>
 
 
 namespace Sledge {
@@ -269,13 +270,13 @@ namespace Sledge {
 		
 	public:  // == CONSTRUCTORS and DESTRUCTOR
 		
-		RingBuffer(Index_t size, Index_t brn/*=0*/) 
-			: SIZE(size), bourn_(brn)//(brn!=0?brn:size)
+		RingBuffer(SizeT capacity, Index_t brn/*=0*/) 
+			: capacity_(capacity), bourn_(brn)//(brn!=0?brn:size)
 		{
-			_data = allocator_.allocate(size); 
+			_data = allocator_.allocate(capacity_); 
 		}
 		
-		RingBuffer(Index_t capacity = DEFAULT_CAPACITY) 
+		RingBuffer(SizeT capacity = DEFAULT_CAPACITY) 
 			: capacity_(capacity)//, bourn_(size)
 		{
 			_data = allocator_.allocate(capacity_); 
@@ -639,6 +640,19 @@ namespace Sledge {
 				trim( length() - bourn_ );  //pop( length() - bourn_ );
 			return bourn_;
 		}
+		
+		bool isAligned() const {
+			return head_ == 0;
+		}
+		
+		/*/// Перенос данных, таким образом чтобы голова head_ указывала в на начало массива данных (head_=0)
+		//TODO unit test
+		ThisT& align() { 
+			if( isFull() )
+				; //use additional storage стакан
+			else
+			return *this; 
+		}*/
 	
 	public:  // == `std::vector` COMPATIBLE METHODS. Element access  ==
 		
