@@ -2,8 +2,10 @@
 #include <string>
 #include <iostream>
 #include <hstring.h>
+
 #include "gtest/gtest.h"
-#include "RingBuffer.hpp"
+
+#include "RingIndex.hpp"
 
 
 using namespace std;
@@ -62,25 +64,6 @@ namespace {
 	Use TEST_F( RingIndexTest, test_name ){}
 	*/
 
-
-	// Tests that the Foo::Bar() method does Abc.
-	TEST( RingIndexTest,  Simple )
-	{
-		constexpr unsigned TEST_SIZE = 256;
-		RingBuffer<uint16_t> rb(TEST_SIZE);
-		for( int i=0; i<TEST_SIZE ; ++i )
-			EXPECT_EQ( rb.push(i), true );
-		EXPECT_EQ( rb.length(), TEST_SIZE);
-		EXPECT_EQ( rb.push(0), false );  // buffer overflow. failed to push
-		for( int i=0; i<TEST_SIZE ; ++i )
-			EXPECT_EQ( rb[i], i );
-		for( int i=0; i<TEST_SIZE ; ++i ) {
-			auto v = rb.pop(); 
-			EXPECT_EQ( v, i);
-		}
-		EXPECT_TRUE( rb.isEmpty() );
-	}
-
 	// Tests that the Foo::Bar() method does Abc.
 	TEST( RingIndexTest, RingIndex1)
 	{
@@ -129,7 +112,7 @@ namespace {
 	
 	
 	/// When result overflows ( value + increment ) > LIMIT_MAX 
-	TEST( RingIndexTest, RingIndex_OverflowSum)
+	TEST( RingIndexTest, OverflowSum)
 	{
 		RingIndex ri;
 		ri.set_max( RingIndex::LIMIT_MAX - 7 );
@@ -144,7 +127,7 @@ namespace {
 	}
 	
 	//todo
-	TEST( RingIndexTest, RingIndex_UnderflowSub)
+	TEST( RingIndexTest, UnderflowSub)
 	{
 		
 	}

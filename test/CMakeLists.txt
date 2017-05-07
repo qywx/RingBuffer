@@ -12,7 +12,10 @@ include_directories( ${googletest_SOURCE_DIR}/include
 # Unit Tests
 ################################
 # Add test cpp file
-set( TEST_FILES testgtest.cpp )
+set( TEST_FILES 
+     gtest-RingIndex.cpp
+     gtest-RingBuffer.cpp
+     )
 add_executable( runUnitTests ${TEST_FILES} )
 ## Link test executable against gtest & gtest_main
 target_link_libraries( runUnitTests gtest gtest_main )
