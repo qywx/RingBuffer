@@ -332,12 +332,12 @@ namespace Sledge {
 		
 		/// эквивалент getLast()
 		Data_t& peek() {
-			return getLast();
+			return getFirst();
 		}
 		
 		/// эквивалент getLast()
 		const Data_t& peek() const {
-			return getLast();
+			return getFirst();
 		}
 		
 		/// 
