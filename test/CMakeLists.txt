@@ -3,25 +3,29 @@
 # GTest
 ################################
 add_subdirectory( googletest )
-enable_testing()
 include_directories( ${googletest_SOURCE_DIR}/include
                      ${googletest_SOURCE_DIR} 
                      )
 
+enable_testing()
+
 ################################
-# Unit Tests
+###         Unit Tests       ###
 ################################
-# Add test cpp file
-set( TEST_FILES 
-     gtest-RingIndex.cpp
-     gtest-RingBuffer.cpp
-     )
-add_executable( runUnitTests ${TEST_FILES} )
+## Add test cpp file
+add_executable( gtest-RingIndex 
+                gtest-RingIndex.cpp )
+add_executable( gtest-RingBuffer
+                gtest-RingBuffer.cpp )
 ## Link test executable against gtest & gtest_main
-target_link_libraries( runUnitTests gtest gtest_main )
-#add_test( NAME runUnitTests COMMAND runUnitTests )
-
-
+target_link_libraries(  gtest-RingIndex
+                        gtest gtest_main )
+target_link_libraries(  gtest-RingBuffer
+                        gtest gtest_main )
+add_test( NAME gtest-RingIndex 
+          COMMAND gtest-RingIndex )
+add_test( NAME gtest-RingBuffer
+          COMMAND gtest-RingBuffer )
 
 ########################################
 # Boost::Test
