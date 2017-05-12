@@ -1,10 +1,7 @@
 
 #include <string>
 #include <iostream>
-#include <hstring.h>
-
 #include "gtest/gtest.h"
-
 #include "RingIndex.hpp"
 
 

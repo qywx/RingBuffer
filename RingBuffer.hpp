@@ -459,7 +459,7 @@ namespace Sledge {
 			//assert( !isEmpty() );
 			//assert( (-length()) <= i && i < length() );
 			if( isEmpty() || !(-length() <= pos && pos < length() ) )
-				throw std::out_of_range();
+				throw std::out_of_range("Index out of range");
 			return operator[](pos);
 		}
 		
@@ -467,7 +467,7 @@ namespace Sledge {
 		const DataT& at( IndexT pos ) const
 		{
 			if( pos < size() )
-				throw std::out_of_range();
+				throw std::out_of_range("Index out of range");
 			return operator[](pos);
 		}
 		

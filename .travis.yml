@@ -1,0 +1,31 @@
+language: cpp
+compiler: 
+  - clang
+  - gcc
+script: cmake -G"Unix Makefiles" ./  && make && make test
+
+## from http://stackoverflow.com/questions/15674064/github-submodule-access-rights-travis-ci#24600210
+## Handle git submodules yourself
+git:
+  submodules: false
+## Use sed to replace the SSH URL with the public URL, then initialize submodules
+before_install:
+  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules  && cat .gitmodules
+  - git submodule update --init --recursive
+  
+## From http://stackoverflow.com/questions/22111549/travis-ci-with-clang-3-4-and-c11#30925448
+install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      #- llvm-toolchain-precise-3.7
+      ## Force more recent cmake http://stackoverflow.com/questions/33196136/travis-ci-update-cmake-using-the-packages-cache
+      - kalakris-cmake  
+    packages:
+      - gcc-4.8
+      - g++-4.8
+      - clang  #clang-3.7
+      - cmake
+#env: COMPILER=clang++-3.7

@@ -34,7 +34,7 @@ namespace Sledge {
 	public:
 		using RawType = std::size_t;  //RawType_;
 		using RawT = RawType;
-		using SRrawType = signed RawType;
+		//using SRrawType = signed RawType;  //FIXME Clang and CcArm stacks here.
 		
 		static const RawType LIMIT_MAX = std::numeric_limits<RawType>::max();
 		//static const RawType INDEX_MAX = LIMIT_MAX -1;
